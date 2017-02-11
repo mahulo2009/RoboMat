@@ -1,13 +1,14 @@
-cfg={}
-cfg.ssid="ESP8266";
-cfg.pwd="12345678";
-wifi.ap.config(cfg);
+wifi.setmode(wifi.STATION)
+wifi.sta.config("MOVISTAR_D659","XXX")
+print(wifi.sta.getip())
 
-cfg={}
-cfg.ip="192.168.1.1";
-cfg.netmask="255.255.255.0";
-cfg.gateway="192.168.1.1";
-wifi.ap.setip(cfg);
-wifi.setmode(wifi.SOFTAP)
+srv=net.createServer(net.TCP)
+srv:listen(80,function(conn)
+    conn:on("receive", function(client,request)
+	print(request) 
+	client:send("<h1> Hello, NodeMcu.</h1>")
 
-collectgarbage();
+	client:close();
+    collectgarbage();
+    end)
+end)
