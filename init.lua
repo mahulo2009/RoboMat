@@ -23,10 +23,12 @@ gpio.mode(D4, gpio.OUTPUT);
 gpio.write(D4, gpio.LOW);
 
 
-
 srv=net.createServer(net.TCP)
 srv:listen(80,function(conn)
     conn:on("receive", function(sck,payload)
+
+    	print(payload);
+
 		local buf = "";
 	    local _, _, method, path, vars = string.find(payload, "([A-Z]+) (.+)?(.+) HTTP");
 	    if(method == nil)then
@@ -58,9 +60,6 @@ srv:listen(80,function(conn)
 					speed=0;
 					direction=0;
 				end
-
-				
-				
 		elseif(_GET.cmd == "backward" ) then
 				speed = tonumber(_GET.param)
 				if (speed > 5) then
