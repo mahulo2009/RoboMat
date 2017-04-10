@@ -20,7 +20,6 @@ function motor_move(self,direction,power, time_movement)
 	print ("pwm.setduty(".. self.number..","..duty..")");
 	print ("pwm.start("..self.number..")");
 
-
 	pwm.setduty(self.number,duty);
 	pwm.start(self.number);
 	if (direction == 0) then
@@ -52,26 +51,25 @@ end
 function engine_move(direction,power, time_movement)
 	Engine.motor1.move(Engine.motor1,direction,power, time_movement);
 	Engine.motor2.move(Engine.motor2,direction,power, time_movement);
-
 end
 
 function engine_turn(direction,power, wheel_angle,time_movement)
-	local power1 = power;
-	local power2 = power;
+	local power1 = 100;
+	local power2 = 100;
 
-	if (direction==1) then
-		power1 = (100/3)*(4-wheel_angle);
+	if (direction==0) then
+		power1 = 100-25*wheel_angle;
 	else
-		power2 = (100/3)*(4-wheel_angle);
+		power2 = 100-25*wheel_angle;
 	end
 
-	Engine.motor1(Engine.motor1,direction,power1, time_movement);
-	Engine.motor2(Engine.motor2,direction,power2, time_movement);
+	Engine.motor1.move(Engine.motor1,direction,power1, time_movement);
+	Engine.motor2.move(Engine.motor2,direction,power2, time_movement);
 end
 
 function engine_twist(direction,power,time_movement)
-	Engine.motor1(Engine.motor1,direction,power, time_movement);
-	Engine.motor1(Engine.motor2,direction,power, time_movement);
+	Engine.motor1.move(Engine.motor1,direction,power, time_movement);
+	Engine.motor1.move(Engine.motor2,direction,power, time_movement);
 end
 
 Engine = {
@@ -82,7 +80,6 @@ Engine = {
 	turn=engine_turn,
 	twist=engine_twist
 }
-
 
 function motor (a)
 	print("method " .. a[0] );
