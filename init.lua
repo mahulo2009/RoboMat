@@ -1,27 +1,152 @@
+print("RoboMat!")
+
 wifi.setmode(wifi.STATION)
-wifi.sta.config("MOVISTAR_D659","gQK9NJ6amoPbTMfcqz67")
+wifi.sta.config("MOVISTAR_D659","")
 print(wifi.sta.getip())
 
-D1 = 1;
-D2 = 2;
-D3 = 3;
-D4 = 4;
+function motor_init(self) 
 
-speed=0;
-speed1=0;
-speed2=0;
-wheel=0;
-count=204;
-direction=0;
+	print ("pwm.setup("..self.number..", 500, 0);");
+	print ("gpio.mode("..(self.number+2)..", gpio.OUTPUT);");
+	print ("gpio.write("..(self.number+2)..", gpio.LOW);");
 
-pwm.setup(D1,100,speed);
-pwm.setup(D2,100,speed);
+	pwm.setup(self.number, 500, 0);
+	gpio.mode(self.number+2, gpio.OUTPUT);
+	gpio.write(self.number+2, gpio.LOW);
+end
 
-gpio.mode(D3, gpio.OUTPUT);
-gpio.write(D3, gpio.LOW);
-gpio.mode(D4, gpio.OUTPUT);
-gpio.write(D4, gpio.LOW);
+function motor_move(self,direction,power, time_movement)	
+	print ("pwm.setduty(".. self.number..","..power..")");
+	print ("pwm.start("..self.number..")");
 
+	pwm.setduty(self.number,power);
+	pwm.start(self.number);
+	if (direction == 0) then
+		print("gpio.write("..self.number..", gpio.LOW)");
+		gpio.write(self.number+2, gpio.LOW);
+	else 
+		print("gpio.write("..self.number..", gpio.HIGH)");
+		gpio.write(self.number+2, gpio.HIGH);
+	end
+
+	if ( not ( time_movement == 0 ) ) then
+		
+		tmr.alarm(self.number,time_movement,tmr.ALARM_SINGLE,function()
+			print("pwm.stop("..self.number..")");
+			pwm.stop(self.number)
+		end)
+		
+	end
+end
+
+motor1 = { number=1,init = motor_init,move = motor_move	}
+motor2 = { number=2,init = motor_init,move = motor_move	}
+
+
+function engine_init() 
+	Engine.motor1.init(Engine.motor1);
+	Engine.motor2.init(Engine.motor2);
+end
+
+function engine_move(direction,power, time_movement)
+	Engine.motor1.move(Engine.motor1,direction,power, time_movement);
+	Engine.motor2.move(Engine.motor2,direction,power, time_movement);
+
+end
+
+function engine_turn(direction,power, wheel_angle,time_movement)
+
+	local power1 = power;
+	local power2 = power;
+
+	if (direction==1) then
+		power1 = (100/3)*(4-wheel_angle);
+	else
+		power2 = (100/3)*(4-wheel_angle);
+	end
+
+	Engine.motor1(Engine.motor1,direction,power1, time_movement);
+	Engine.motor2(Engine.motor2,direction,power2, time_movement);
+end
+
+function engine_twist(direction,power,time_movement)
+	Engine.motor1(Engine.motor1,direction,power, time_movement);
+	Engine.motor1(Engine.motor2,direction,power, time_movement);
+end
+
+Engine = {
+	motor1=motor1,
+	motor2=motor2,
+	init=engine_init,
+	move=engine_move,
+	turn=engine_turn,
+	twist=engine_twist
+}
+
+
+function motor (a)
+	print("method " .. a[0] );
+	print("motor number " .. a[1]);
+	print("motor direction " .. a[2]);
+	print("motor power " ..  a[3]);
+	print("movement time " .. a[4]);
+
+	motor_number = tonumber(a[1]);
+
+	if (motor_number == 1) then
+		Engine.motor1.move(Engine.motor1,
+			tonumber(a[2]),
+			tonumber(a[3]),
+			tonumber(a[4]));
+	elseif  (motor_number == 2) then
+		Engine.motor2.move(Engine.motor2,
+			tonumber(a[2]),
+			tonumber(a[3]),
+			tonumber(a[4]));
+	end
+end
+
+
+function engine (a)
+	print("method " .. a[0] );
+	print("engine direction " .. a[1]);
+	print("engine power " ..  a[2]);
+	print("engine time " .. a[3]);
+
+	Engine.move(tonumber(a[1]),
+		tonumber(a[2]),
+		tonumber(a[3]));
+end
+
+function turn (a)
+	print("method " .. a[0] );
+	print("turn direction " .. a[1]);
+	print("turn power " ..  a[2]);
+	print("turn wheel angle " ..  a[3]);
+	print("turn time " .. a[4]);
+
+	Engine.turn(tonumber(a[1]),
+		tonumber(a[2]),
+		tonumber(a[3]),
+		tonumber(a[4]));
+end
+
+function twist(a)
+	print("method " .. a[0] );
+	print("twist direction " .. a[1]);
+	print("twist power " ..  a[2]);	
+	print("engine time " .. a[3]);
+
+	Engine.twist(tonumber(a[1]),
+		tonumber(a[2]),
+		tonumber(a[3]));
+end
+
+
+valid_commands = {["motor"] = motor,["engine"] = engine,["turn"] = turn, ["twist"] = twist};
+
+
+Engine.init();
 
 srv=net.createServer(net.TCP)
 srv:listen(80,function(conn)
@@ -29,84 +154,23 @@ srv:listen(80,function(conn)
 
     	print(payload);
 
-		local buf = "";
-	    local _, _, method, path, vars = string.find(payload, "([A-Z]+) (.+)?(.+) HTTP");
-	    if(method == nil)then
-	        _, _, method, path = string.find(payload, "([A-Z]+) (.+) HTTP");
-	    end
-	    local _GET = {}
-	    if (vars ~= nil)then
-	        for k, v in string.gmatch(vars, "(%w+)=(%w+)&*") do
-	            _GET[k] = v
-	        end
-	    end
+    	__,__,__,url =  string.find(payload, "([A-Z]+) (.+) HTTP");
 
-		if(_GET.cmd == "forward" ) then
-				speed = tonumber(_GET.param)
-				if (speed > 10) then
-					speed=10;
-				end
-				if (speed < 0 ) then
-					speed=0
-				end
-				
-				if (speed < 5) then
-					speed = 5 - speed;
-					direction=1;
-				elseif (speed > 5) then
-					speed = speed - 5;
-					direction=0;
-				elseif (speed == 5) then
-					speed=0;
-					direction=0;
-				end
-		elseif(_GET.cmd == "backward" ) then
-				speed = tonumber(_GET.param)
-				if (speed > 5) then
-					speed=5;
-				end
-				direction=1;
-		elseif(_GET.cmd == "wheel" ) then
-				wheel = tonumber(_GET.param)-3;
-				if (wheel > 3) then
-					wheel=3;
-				end					
+		command={}
+
+		number_commmand=0;
+		for k in string.gmatch(url,"/(%w+)") do
+			command[number_commmand]=k;
+			number_commmand=number_commmand+1;
 		end
 
-		speed1=speed;
-		speed2=speed;
-			
-		if (wheel > 0) then
-			speed2 = (speed-wheel);
-		elseif (wheel < 0) then
-			speed1 = (speed+wheel);
-		end
 
-		if (speed1 < 0) then
-			speed1=0;
-		end
+		v =  valid_commands[command[0]];
 
-		if (speed2 < 0) then
-			speed2=0;
-		end
+		v(command);
 
-		if (direction == 0) then
-			gpio.write(D3, gpio.LOW);
-			gpio.write(D4, gpio.LOW);
-		else 
-			gpio.write(D3, gpio.HIGH);
-			gpio.write(D4, gpio.HIGH);
-		end
 
-		print("speed1:"..speed1);
-		print("speed2:"..speed2);
-
-		pwm.setduty(1,speed1*count);	
-		pwm.setduty(2,speed2*count);
-		pwm.start(D1);
-		pwm.start(D2);
-
-		sck:send("HTTP/1.0 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: 25\r\nContent-Type: text/html\r\n\r\n<h1> Hello, NodeMCU.</h1>");
+    	sck:send("HTTP/1.0 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: 25\r\nContent-Type: text/html\r\n\r\n<h1> Hello, NodeMCU.</h1>");
 
     end)
     conn:on("sent",function(sck)
