@@ -1,7 +1,7 @@
 print("RoboMat!")
 
 wifi.setmode(wifi.STATION)
-wifi.sta.config("MOVISTAR_D659","")
+wifi.sta.config("***","***")
 print(wifi.sta.getip())
 
 function motor_init(self) 
@@ -21,7 +21,6 @@ function motor_move(self,direction,power, time_movement)
 	print ("pwm.start("..self.number..")");
 
 	pwm.setduty(self.number,duty);
-	pwm.start(self.number);
 	if (direction == 0) then
 		print("gpio.write("..self.number..", gpio.LOW)");
 		gpio.write(self.number+2, gpio.LOW);
@@ -40,8 +39,12 @@ function motor_move(self,direction,power, time_movement)
 	end
 end
 
-motor1 = { number=1,init = motor_init,move = motor_move	}
-motor2 = { number=2,init = motor_init,move = motor_move	}
+function motor_start(self)
+	pwm.start(self.number);
+end
+
+motor1 = { number=1,init = motor_init,move = motor_move, start=motor_start}
+motor2 = { number=2,init = motor_init,move = motor_move, start=motor_start}
 
 function engine_init() 
 	Engine.motor1.init(Engine.motor1);
@@ -51,6 +54,9 @@ end
 function engine_move(direction,power, time_movement)
 	Engine.motor1.move(Engine.motor1,direction,power, time_movement);
 	Engine.motor2.move(Engine.motor2,direction,power, time_movement);
+
+	Engine.motor1.start(Engine.motor1);
+	Engine.motor2.start(Engine.motor2);
 end
 
 function engine_turn(direction,power, wheel_angle,time_movement)
@@ -171,6 +177,7 @@ function twist(a)
 end
 
 valid_commands = {["motor"] = motor,["engine"] = engine,["turn"] = turn, ["twist"] = twist};
+
 
 Engine.init();
 
