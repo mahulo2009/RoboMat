@@ -1,0 +1,52 @@
+# RoboMat
+
+A) Move a motor individually in Open Loop during a time
+
+Parameters:
+
+	- Motor Number (0,1).
+	- Direction (0 == foreware, 1 == backware).
+	- Power (0..100).
+	- Time in seconds (0 == indefinitly)
+Commando:
+	motor/<motor_number>/<motor_direction>/<motor_power>/<movement_time>
+Example:
+	motor/0/0/50/0 -- Move motor 0 in foreware direction and with 50% power indefinitilly
+
+B) Move the car indefinitally  during certaion time,  in Open Loop, controlling the motor internally.
+
+Parameters:
+
+	- Direction (0 == foreware, 1 == backware).
+	- Power (0..100).
+	- Time in seconds (0 == indefinitly)
+Commando:
+	engine/<engine_direction>/<engine_power>/<movement_time>
+Example:
+	engine/0/50/10 -- Move carin foreware direction and with 50% power during 10 seconds.
+
+C) Change the direction of the car, during certaion time, in Open Loop, controlling the motor internally.
+
+Parameters:
+
+	- Direction (0 == left, 1 == right).
+	- Power (0..100).
+	- Wheel angle (1,2,3).
+	- Time in seconds (0 == indefinitly)
+Commando:
+	turn/<engine_direction>/<engine_power>/<wheel_angle>/<movement_time>
+Example:
+	turn/0/50/3/5 -- Turn left with 50% of power and angle 3 during 5 seconds.
+
+D) Twist
+
+Parameters:
+	- Direction (0 == left, 1 == right).
+	- Power (0..100).
+	- Time in seconds (0 == indefinitly)
+Commando:
+	twist/<engine_direction>/<engine_power>/<movement_time>
+Example:
+	twist/0/100/1 -- Twist left 100% power during 1 second.
+
+
