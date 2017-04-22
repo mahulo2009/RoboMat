@@ -1,5 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <ros.h>
+
 #include <std_msgs/String.h>
 #include <std_msgs/Float64.h>
 #include <rosserial_arduino/MotorMove.h>
@@ -8,7 +9,7 @@
 #include "motor.h"
 
 const char* ssid = "***";
-const char* password = "***";  
+const char* password = "***";
 
 Motor *engine[2];
 
@@ -59,7 +60,7 @@ void messageMotorMove( const rosserial_arduino::MotorMove& msg) {
     nh.logdebug("Number motor out of range");
     return;
   }  
-  int result = engine[msg.number]->move(msg.power,msg.direction);
+  int result = engine[msg.number]->move(msg.power,msg.direction,0);
   if (result == -1) {
     nh.logdebug("Out of range");
   }  
@@ -71,7 +72,7 @@ ros::Subscriber<rosserial_arduino::MotorMove> motor_move("motor_move", &messageM
 void messageEngineMove( const rosserial_arduino::EngineMove& msg) {  
   nh.logdebug("Engine Move");  
   for (int i=0;i<2;i++) {
-    int result = engine[i]->move(msg.power,msg.direction);
+    int result = engine[i]->move(msg.power,msg.direction,msg.movement_time);
       if (result == -1) {
         nh.logdebug("Out of range");
       }
@@ -87,7 +88,6 @@ void setup() {
   Serial.begin(115200);
   setupWiFi();
   delay(2000);
-  
   engine[0] = new Motor(5,0,14);
   engine[1] = new Motor(4,2,12);
   for (int i=0;i<2;i++) {
@@ -123,6 +123,10 @@ void loop() {
 
   motor_encoder.publish(&engine_encoder);
   delay(100);
+
+  for (int i=0;i<2;i++) {
+    engine[i]->stop();
+  }
   nh.spinOnce();
 }
 

@@ -8,6 +8,7 @@ class Motor {
     int pin_power;
     int pin_direction;
     int pin_positoin;
+    int duration;
     int position;    
     int velocity;
     long previous_time;    
@@ -24,7 +25,7 @@ class Motor {
     /**
     * 
     */
-    int move(int power, int direction);
+    int move(int power, int direction,int duration);
     /**
      * 
      */

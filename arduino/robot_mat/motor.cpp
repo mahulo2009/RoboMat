@@ -16,12 +16,13 @@ void Motor::setup() {
   pinMode(pin_positoin, INPUT_PULLUP);      
 }
 
-int Motor::move(int power, int direction) {
+int Motor::move(int power, int direction,int duration) {
+  this->duration=duration;
   int duty = floor((1023/100) * power);
-  if ( (duty <0) || (duty >1023) ) {        
+  if ( (duty <0) || (duty >1023) ) {
     return -1;
   }
-  if ( (direction <0) || (direction >1) ) {        
+  if ( (direction <0) || (direction >1) ) {
     return -1;
   }
   analogWrite(pin_power,duty);
@@ -34,7 +35,10 @@ int Motor::move(int power, int direction) {
 }   
 
 void Motor::stop() {
-  analogWrite(pin_power,0);
+  duration=duration-1;
+  if (duration <=0) {
+    analogWrite(pin_power,0);
+  }
 }
 
 void Motor::updatePosition() {
