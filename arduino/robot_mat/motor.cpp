@@ -16,9 +16,9 @@ void Motor::setup() {
   pinMode(pin_positoin, INPUT_PULLUP);      
 }
 
-int Motor::move(int power, int direction,int duration) {
+int Motor::move(double velocity, int direction,int duration) {
   this->duration=duration;
-  int duty = floor((1023/100) * power);
+  int duty = velocity*power_by_velocity_factor;  
   if ( (duty <0) || (duty >1023) ) {
     return -1;
   }

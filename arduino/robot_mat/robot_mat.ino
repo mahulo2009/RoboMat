@@ -8,6 +8,9 @@
 #include <rosserial_arduino/EngineEncoder.h>
 #include "motor.h"
 
+double revolution_by_ticks_factor =  1/25.0;
+double power_by_velocity_factor =  1024.0/1.25;
+
 const char* ssid = "***";
 const char* password = "***";
 
@@ -72,7 +75,8 @@ ros::Subscriber<rosserial_arduino::MotorMove> motor_move("motor_move", &messageM
 void messageEngineMove( const rosserial_arduino::EngineMove& msg) {  
   nh.logdebug("Engine Move");  
   for (int i=0;i<2;i++) {
-    int result = engine[i]->move(msg.power,msg.direction,msg.movement_time);
+   
+    int result = engine[i]->move(msg.velocity,msg.direction,msg.time);
       if (result == -1) {
         nh.logdebug("Out of range");
       }
@@ -110,8 +114,8 @@ void setup() {
 
 void loop() {
   if (millis() > previous_time + 1000 ) {    
-    engine_encoder.velocity_1=engine[0]->getPosition()-previous_pos_1;
-    engine_encoder.velocity_2=engine[1]->getPosition()-previous_pos_2;  
+    engine_encoder.velocity_1= (engine[0]->getPosition()-previous_pos_1)*revolution_by_ticks_factor;
+    engine_encoder.velocity_2= (engine[1]->getPosition()-previous_pos_2)*revolution_by_ticks_factor;  
 
     previous_pos_1=engine[0]->getPosition();
     previous_pos_2=engine[1]->getPosition();    
@@ -127,6 +131,8 @@ void loop() {
   for (int i=0;i<2;i++) {
     engine[i]->stop();
   }
+
+  
   nh.spinOnce();
 }
 

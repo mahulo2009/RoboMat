@@ -11,7 +11,9 @@ class Motor {
     int duration;
     int position;    
     int velocity;
-    long previous_time;    
+    long previous_time;   
+
+    double power_by_velocity_factor =  1023.0/1.25;
     
   public:
     /**
@@ -25,7 +27,7 @@ class Motor {
     /**
     * 
     */
-    int move(int power, int direction,int duration);
+    int move(double velocity, int direction,int duration);
     /**
      * 
      */
