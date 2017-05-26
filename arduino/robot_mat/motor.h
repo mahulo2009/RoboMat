@@ -13,7 +13,7 @@ class Motor {
     int velocity;
     long previous_time;   
 
-    double power_by_velocity_factor =  1023.0/1.25;
+    double power_by_velocity_factor =  1023.0/1.4;
     
   public:
     /**

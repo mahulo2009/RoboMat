@@ -1,5 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <ros.h>
+#include "pid.h"
 
 #include <std_msgs/String.h>
 #include <std_msgs/Float64.h>
@@ -9,12 +10,15 @@
 #include "motor.h"
 
 double revolution_by_ticks_factor =  1/25.0;
-double power_by_velocity_factor =  1024.0/1.25;
+double power_by_velocity_factor =  1024.0/1.4;
 
-const char* ssid = "***";
-const char* password = "***";
+const char* ssid = "MOVISTAR_D659";
+const char* password = "gQK9NJ6amoPbTMfcqz67";
 
 Motor *engine[2];
+PID  *pid[2];
+
+
 
 
 long previous_time=0;
@@ -27,6 +31,8 @@ IPAddress ip_address;
 int status = WL_IDLE_STATUS;
 
 WiFiClient client;
+
+
 
 class WiFiHardware {
 public:
@@ -74,8 +80,10 @@ ros::Subscriber<rosserial_arduino::MotorMove> motor_move("motor_move", &messageM
  */
 void messageEngineMove( const rosserial_arduino::EngineMove& msg) {  
   nh.logdebug("Engine Move");  
+
+  
   for (int i=0;i<2;i++) {
-   
+    pid[i]->setTarget(msg.velocity); 
     int result = engine[i]->move(msg.velocity,msg.direction,msg.time);
       if (result == -1) {
         nh.logdebug("Out of range");
@@ -87,19 +95,43 @@ ros::Subscriber<rosserial_arduino::EngineMove> engine_move("engine_move", &messa
 rosserial_arduino::EngineEncoder engine_encoder;
 ros::Publisher motor_encoder("motor_encoder", &engine_encoder);
 
-void setup() {
+void repeatMe() {
+  if (millis() > previous_time + 1000 ) { 
+    engine_encoder.velocity_1= (engine[0]->getPosition()-previous_pos_1)*revolution_by_ticks_factor;
+    engine_encoder.velocity_2= (engine[1]->getPosition()-previous_pos_2)*revolution_by_ticks_factor;  
+    pid[0]->setInput(engine_encoder.velocity_1);    
+    pid[1]->setInput(engine_encoder.velocity_2);
+    engine_encoder.velocityDemanded_1=1.2-pid[0]->compute();
+    engine_encoder.velocityDemanded_2=1.2-
+    pid[1]->compute();
 
+    engine[0]->move(engine_encoder.velocityDemanded_1,0,100);
+    engine[1]->move(engine_encoder.velocityDemanded_2,0,100);
+
+    previous_pos_1=engine[0]->getPosition();
+    previous_pos_2=engine[1]->getPosition();    
+    previous_time=millis();
+
+    engine_encoder.encoder_1=engine[0]->getPosition();
+    engine_encoder.encoder_2=engine[1]->getPosition();  
+  }
+  
+  motor_encoder.publish(&engine_encoder);
+}
+
+void setup() {
   Serial.begin(115200);
   setupWiFi();
   delay(2000);
   engine[0] = new Motor(5,0,14);
+  pid[0]= new PID(0.6,0,0);
   engine[1] = new Motor(4,2,12);
+  pid[1]= new PID(0.6,0,0);
   for (int i=0;i<2;i++) {
     engine[i]->setup();
   }  
   attachInterrupt(digitalPinToInterrupt(14), update_wheel_1_position, RISING);        
   attachInterrupt(digitalPinToInterrupt(12), update_wheel_2_position, RISING);        
-
   
   nh.initNode();
   nh.subscribe(motor_move);
@@ -110,30 +142,19 @@ void setup() {
   engine_encoder.encoder_2=0;  
 
   previous_time=millis();
+  
+
 }
 
 void loop() {
-  if (millis() > previous_time + 1000 ) {    
-    engine_encoder.velocity_1= (engine[0]->getPosition()-previous_pos_1)*revolution_by_ticks_factor;
-    engine_encoder.velocity_2= (engine[1]->getPosition()-previous_pos_2)*revolution_by_ticks_factor;  
-
-    previous_pos_1=engine[0]->getPosition();
-    previous_pos_2=engine[1]->getPosition();    
-    previous_time=millis();
-  }
-
-  engine_encoder.encoder_1=engine[0]->getPosition();
-  engine_encoder.encoder_2=engine[1]->getPosition();  
-
-  motor_encoder.publish(&engine_encoder);
-  delay(100);
-
+  repeatMe();
+  
+  
   for (int i=0;i<2;i++) {
     engine[i]->stop();
   }
-
-  
   nh.spinOnce();
+  delay(10);
 }
 
 void update_wheel_1_position() { 
