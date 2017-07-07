@@ -1,13 +1,12 @@
-#include "motor.h"
+#include "Motor.h"
 
 Motor::Motor(int pin_power,int pin_direction,int pin_positoin) {
   this->pin_power=pin_power;
   this->pin_direction=pin_direction;
   this->pin_positoin=pin_positoin;
-  this->position=0;  
-  this->previous_time=0;
+  this->position=0;   
   this->velocity=0;
-
+  this->previous_position=0;
 }
 
 void Motor::setup() {
@@ -38,19 +37,18 @@ void Motor::stop() {
 }
 
 void Motor::updatePosition() {
+  this->position=this->position+1;   
+}
 
-  long time_now = millis();
-  if (time_now > this->previous_time + 15 ) {
-    this->position=this->position+1;        
-    this->previous_time=time_now;
-  }
-    
+void Motor::updateVelocity() {
+  this->velocity =  (position - previous_position) / ( 1.0 );
+  this->previous_position=position;     
 }
 
 int Motor::getPosition() {
   return this->position;
 }
 
-
-
-
+float Motor::getVelocity() {
+  return this->velocity;
+}

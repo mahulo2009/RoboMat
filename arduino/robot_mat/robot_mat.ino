@@ -2,67 +2,42 @@
 #include <ros.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Float64.h>
+#include <ros/time.h>
 #include <rosserial_arduino/MotorMove.h>
 #include <rosserial_arduino/EngineMove.h>
 #include <rosserial_arduino/EngineEncoder.h>
-#include "motor.h"
+#include "Robot.h"
+//Necessary for the timer function
+extern "C"
+{
+  #include "user_interface.h"
+}
 
+#define DEBUG 1
+
+
+//Network Configuration
 const char* ssid = "***";
 const char* password = "***";  
+IPAddress server(161,72,123,196);      
+const uint16_t serverPort = 11411;
 
-Motor *engine[2];
+//Timer configuration
+uint32_t last = 0;
+uint32_t now = 0;
+os_timer_t a_timer;
+int timer_period = 1000000;       
 
-
-long previous_time=0;
-
-int previous_pos_1=0;
-int previous_pos_2=0;
-
-IPAddress server(192, 168, 1, 40); // ip of your ROS server
-IPAddress ip_address;
-int status = WL_IDLE_STATUS;
-
-WiFiClient client;
-
-class WiFiHardware {
-public:
-  WiFiHardware() {};
-
-  void init() {
-    client.connect(server, 11411);
-  }
-  // read a byte from the serial port. -1 = failure
-  int read() {
-    // implement this method so that it reads a byte from the TCP connection and returns it
-    //  you may return -1 is there is an error; for example if the TCP connection is not open
-    return client.read();         //will return -1 when it will works
-  }
-  // write data to the connection to ROS
-  void write(uint8_t* data, int length) {
-    // implement this so that it takes the arguments and writes or prints them to the TCP connection
-    for(int i=0; i<length; i++)
-      client.write(data[i]);
-  }
-  // returns milliseconds since start of program
-  unsigned long time() {
-     return millis(); // easy; did this one for you
-  }
-};
-
-ros::NodeHandle_<WiFiHardware>  nh;
+//Robot
+Robot robot;
+//Ros node handler
+ros::NodeHandle nh;
 /**
  * 
  */
 void messageMotorMove( const rosserial_arduino::MotorMove& msg) {  
-  nh.logdebug("Motor Move");
-  if ( (msg.number <0) || (msg.number >1) ) {
-    nh.logdebug("Number motor out of range");
-    return;
-  }  
-  int result = engine[msg.number]->move(msg.power,msg.direction);
-  if (result == -1) {
-    nh.logdebug("Out of range");
-  }  
+  nh.logdebug("Motor Move");  
+  robot.move(msg.number,msg.power,msg.direction);
 }
 ros::Subscriber<rosserial_arduino::MotorMove> motor_move("motor_move", &messageMotorMove);
 /**
@@ -70,68 +45,69 @@ ros::Subscriber<rosserial_arduino::MotorMove> motor_move("motor_move", &messageM
  */
 void messageEngineMove( const rosserial_arduino::EngineMove& msg) {  
   nh.logdebug("Engine Move");  
-  for (int i=0;i<2;i++) {
-    int result = engine[i]->move(msg.power,msg.direction);
-      if (result == -1) {
-        nh.logdebug("Out of range");
-      }
-  }
+  robot.move(msg.power,msg.direction);
 }
 ros::Subscriber<rosserial_arduino::EngineMove> engine_move("engine_move", &messageEngineMove);
 
 rosserial_arduino::EngineEncoder engine_encoder;
 ros::Publisher motor_encoder("motor_encoder", &engine_encoder);
 
-void setup() {
+void timer_callback(void) {
+  timer0_write(ESP.getCycleCount() + timer_period * 80); // 160 when running at 160mhz
+  //Update velocity
+  robot.updateVelocity();
+}
 
+void setup() {
+  //Setup Serial line.
   Serial.begin(115200);
+
+  //Setup Wifi
   setupWiFi();
   delay(2000);
-  
-  engine[0] = new Motor(5,0,14);
-  engine[1] = new Motor(4,2,12);
-  for (int i=0;i<2;i++) {
-    engine[i]->setup();
-  }  
+
+  //Configure timers 
+  noInterrupts();
+  timer0_isr_init();
+  timer0_attachInterrupt(timer_callback);
+  timer0_write(ESP.getCycleCount() + timer_period * 80); // 160 when running at 160mhz
+  interrupts();
+    
+  //Setup Robot
+  robot.setup();
+  //Attact the Interruptions 
   attachInterrupt(digitalPinToInterrupt(14), update_wheel_1_position, RISING);        
   attachInterrupt(digitalPinToInterrupt(12), update_wheel_2_position, RISING);        
-
   
+  //Init rose node & subscribe
+  nh.getHardware()->setConnection(server, serverPort);
   nh.initNode();
   nh.subscribe(motor_move);
   nh.subscribe(engine_move);
   nh.advertise(motor_encoder);
-
-  engine_encoder.encoder_1=0;
-  engine_encoder.encoder_2=0;  
-
-  previous_time=millis();
 }
 
 void loop() {
-  if (millis() > previous_time + 1000 ) {    
-    engine_encoder.velocity_1=engine[0]->getPosition()-previous_pos_1;
-    engine_encoder.velocity_2=engine[1]->getPosition()-previous_pos_2;  
-
-    previous_pos_1=engine[0]->getPosition();
-    previous_pos_2=engine[1]->getPosition();    
-    previous_time=millis();
-  }
-
-  engine_encoder.encoder_1=engine[0]->getPosition();
-  engine_encoder.encoder_2=engine[1]->getPosition();  
-
-  motor_encoder.publish(&engine_encoder);
-  delay(100);
-  nh.spinOnce();
-}
+  //if (nh.connected()) {
+    //Publish the telemetry information.
+    engine_encoder.encoder_1=robot.getPosition(0);
+    engine_encoder.encoder_2=robot.getPosition(1);
+    engine_encoder.velocity_1=robot.getVelocity(0);
+    engine_encoder.velocity_2=robot.getVelocity(1);      
+    //Publish
+    motor_encoder.publish(&engine_encoder);
+    nh.spinOnce(); 
+    //Delay
+    delay(100);  
+  //} 
+ }
 
 void update_wheel_1_position() { 
-  engine[0]->updatePosition();
+  robot.updatePosition(0);
 }
 
 void update_wheel_2_position() {
-  engine[1]->updatePosition();    
+  robot.updatePosition(1);
 }
 
 void setupWiFi() {

@@ -1,5 +1,5 @@
-#ifndef motor_H
-#define motor_H
+#ifndef Motor_H
+#define Motor_H
 
 #include <ESP8266WiFi.h>
 
@@ -9,8 +9,9 @@ class Motor {
     int pin_direction;
     int pin_positoin;
     int position;    
-    int velocity;
-    long previous_time;    
+    float velocity;
+    long previous_position;    
+    
     
   public:
     /**
@@ -33,11 +34,23 @@ class Motor {
      * 
      */
     void updatePosition();
+    /**
+     * 
+     */
+    void updateVelocity();
 
     /**
      * 
      */
     int getPosition();
+
+    /**
+     * 
+     */
+    float getVelocity();
+
+    private:
+    
 };
 
 #endif
