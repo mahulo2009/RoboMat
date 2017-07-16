@@ -1,7 +1,9 @@
 #ifndef Motor_H
 #define Motor_H
 
+
 #include <ESP8266WiFi.h>
+#include "pid.h"
 
 class Motor {
   private:
@@ -11,7 +13,14 @@ class Motor {
     int position;    
     float velocity;
     long previous_position;    
+    PID pid;
+
+    float velocityTarget;
+    float velocityDemanded;
+    float velocityCurrent;
     
+    
+    double power_by_velocity_factor =  1023.0/10.0; //TODO The factor is related to update frecuency.
     
   public:
     /**
@@ -25,7 +34,9 @@ class Motor {
     /**
     * 
     */
-    int move(int power, int direction);
+    int move(int velocity, int direction);
+
+    int move_velocity(int velocity);
     /**
      * 
      */
@@ -47,10 +58,15 @@ class Motor {
     /**
      * 
      */
-    float getVelocity();
+    float getVelocityTarget();
+    float getVelocityDemanded();
+    float getVelocityCurrent();
+
+    void configurePid(double Kp, double Ki, double Kd);
 
     private:
     
 };
 
 #endif
+

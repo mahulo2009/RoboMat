@@ -1,3 +1,5 @@
+
+
 #include <ESP8266WiFi.h>
 #include <ros.h>
 #include <std_msgs/String.h>
@@ -6,6 +8,7 @@
 #include <rosserial_arduino/MotorMove.h>
 #include <rosserial_arduino/EngineMove.h>
 #include <rosserial_arduino/EngineEncoder.h>
+#include <rosserial_arduino/Pid.h>
 #include "Robot.h"
 //Necessary for the timer function
 extern "C"
@@ -18,15 +21,14 @@ extern "C"
 
 //Network Configuration
 const char* ssid = "***";
-const char* password = "***";  
-IPAddress server(161,72,123,196);      
+const char* password = "***";
+IPAddress server(192, 168, 1, 40); 
 const uint16_t serverPort = 11411;
 
+
 //Timer configuration
-uint32_t last = 0;
-uint32_t now = 0;
 os_timer_t a_timer;
-int timer_period = 1000000;       
+int timer_period = 250;       
 
 //Robot
 Robot robot;
@@ -45,15 +47,23 @@ ros::Subscriber<rosserial_arduino::MotorMove> motor_move("motor_move", &messageM
  */
 void messageEngineMove( const rosserial_arduino::EngineMove& msg) {  
   nh.logdebug("Engine Move");  
-  robot.move(msg.power,msg.direction);
+  robot.move(msg.velocity,msg.direction);
 }
 ros::Subscriber<rosserial_arduino::EngineMove> engine_move("engine_move", &messageEngineMove);
+
+
+void messagePidCondigure( const rosserial_arduino::Pid& msg) {  
+  nh.logdebug("Pid Configure");  
+  robot.configurePid(msg.Kp,msg.Ki,msg.Kd);
+  
+}
+ros::Subscriber<rosserial_arduino::Pid> configure_pid("configure_pid", &messagePidCondigure);
+
 
 rosserial_arduino::EngineEncoder engine_encoder;
 ros::Publisher motor_encoder("motor_encoder", &engine_encoder);
 
-void timer_callback(void) {
-  timer0_write(ESP.getCycleCount() + timer_period * 80); // 160 when running at 160mhz
+void timer_callback(void *pArg) {
   //Update velocity
   robot.updateVelocity();
 }
@@ -67,12 +77,9 @@ void setup() {
   delay(2000);
 
   //Configure timers 
-  noInterrupts();
-  timer0_isr_init();
-  timer0_attachInterrupt(timer_callback);
-  timer0_write(ESP.getCycleCount() + timer_period * 80); // 160 when running at 160mhz
-  interrupts();
-    
+  os_timer_setfn(&a_timer, timer_callback, NULL); 
+  os_timer_arm(&a_timer, timer_period, true);   // timer in ms
+     
   //Setup Robot
   robot.setup();
   //Attact the Interruptions 
@@ -84,7 +91,9 @@ void setup() {
   nh.initNode();
   nh.subscribe(motor_move);
   nh.subscribe(engine_move);
+  nh.subscribe(configure_pid);
   nh.advertise(motor_encoder);
+  
 }
 
 void loop() {
@@ -94,11 +103,14 @@ void loop() {
     engine_encoder.encoder_2=robot.getPosition(1);
     engine_encoder.velocity_1=robot.getVelocity(0);
     engine_encoder.velocity_2=robot.getVelocity(1);      
+    engine_encoder.velocityDemanded_1=robot.getVelocityDemanded(0);      
+    engine_encoder.velocityDemanded_2=robot.getVelocityDemanded(1);      
+    
     //Publish
     motor_encoder.publish(&engine_encoder);
     nh.spinOnce(); 
     //Delay
-    delay(100);  
+    delay(250);  
   //} 
  }
 
@@ -123,3 +135,4 @@ void setupWiFi() {
   Serial.print(WiFi.localIP());
   Serial.println(" to access client");
 }
+

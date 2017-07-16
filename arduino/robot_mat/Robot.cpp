@@ -47,8 +47,13 @@ int Robot::getPosition(int number) {
 }
 
 float Robot::getVelocity(int number) {
-  return engine_[number]->getVelocity();
+  return engine_[number]->getVelocityCurrent();
 }
+
+float Robot::getVelocityDemanded(int number) {
+return engine_[number]->getVelocityDemanded();  
+}
+
 
 int Robot::move(int power, int direction) {
   for (int i=0;i<2;i++) {
@@ -63,6 +68,14 @@ int Robot::stop() {
   }  
   return 0;
 }
+
+void Robot::configurePid(double Kp, double Ki, double Kd) {
+  for (int i=0;i<2;i++) {
+    engine_[i]->configurePid(Kp,Ki,Kd);    
+  }
+  
+}
+
 
 
 

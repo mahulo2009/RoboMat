@@ -13,12 +13,15 @@ class Robot {
     int updateVelocity();
     int getPosition(int number);
     float getVelocity(int number);
+    float getVelocityDemanded(int number);
     int move(int power, int direction);
     int stop();    
+    void configurePid(double Kp, double Ki, double Kd);
   private:
     Motor *engine_[2];
 };
 
 #endif
+
 
 
