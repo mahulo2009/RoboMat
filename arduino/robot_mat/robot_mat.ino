@@ -21,9 +21,9 @@ extern "C"
 
 
 //Network Configuration
-const char* ssid = "MOVISTAR_D659";
-const char* password = "gQK9NJ6amoPbTMfcqz67";
-IPAddress server(192, 168, 1, 40); 
+const char* ssid = "***";
+const char* password = "***";
+IPAddress server(, , ,); 
 const uint16_t serverPort = 11411;
 
 
