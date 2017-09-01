@@ -8,7 +8,7 @@ PID::PID(double _kp, double _ki, double _kd) {
   output = 0;
   input = 0;
     
-  setOutputLimits(0, 10); //TODO The maximun is related to update frecuency.
+  setOutputLimits(0, 0.1);
 }
 
 PID::PID() {
@@ -40,7 +40,7 @@ void PID::setOutputLimits(double _min, double _max) {
 
 double PID::compute() {
   long change = 250; //TODO This value is related to update frecuency.
-}
+
 
   double error = target - input;
 

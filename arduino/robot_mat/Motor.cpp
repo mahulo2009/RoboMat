@@ -8,6 +8,8 @@ Motor::Motor(int pin_power,int pin_direction,int pin_position) : pid(0.1,0.9,0.2
   this->position=0;   
   this->velocity=0;
   this->previous_position=0;
+
+  pid.setOutputLimits(0,0.1);
 }
 
 void Motor::setup() {
@@ -16,7 +18,24 @@ void Motor::setup() {
   pinMode(pin_positoin, INPUT_PULLUP);      
 }
 
-int Motor::move(int velocity, int direction) {
+int Motor::move(double velocity) {
+  this->velocityTarget=velocity;
+  //Setup the PID target.
+  pid.setTarget(velocityTarget); 
+
+  //Setup direction
+  if( velocity >= 0 ) {
+    digitalWrite(pin_direction,LOW);
+  } else {
+    digitalWrite(pin_direction,HIGH);
+  } 
+  //Move
+  move_velocity(velocityTarget);
+  return 0;             
+}   
+
+
+int Motor::move(double velocity, int direction) {
   this->velocityTarget=velocity;
   //Setup the PID target.
   pid.setTarget(velocityTarget); 
@@ -32,7 +51,7 @@ int Motor::move(int velocity, int direction) {
   return 0;             
 }   
 
-int Motor::move_velocity(int velocity)
+int Motor::move_velocity(double velocity)
 {
   this->velocityDemanded=velocity;
   //Convert from velocity to duty
@@ -40,8 +59,8 @@ int Motor::move_velocity(int velocity)
   if (duty<0) duty=0;
   if (duty>1023) duty=1023;
 
-  //Serial.print("duty:");
-  //Serial.println(duty);
+  Serial.print("duty:");
+  Serial.println(duty);
   
   //Send to the hardware both duty and direcction
   analogWrite(pin_power,duty); 
@@ -57,7 +76,7 @@ void Motor::updatePosition() {
 }
 
 void Motor::updateVelocity() {
-  this->velocityCurrent =  (position - previous_position) / ( 1.0 );
+  this->velocityCurrent =  (position - previous_position) * ( DistancePerCount );
   this->previous_position=position;     
 
 /*

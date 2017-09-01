@@ -18,9 +18,11 @@ class Motor {
     float velocityTarget;
     float velocityDemanded;
     float velocityCurrent;
-    
-    
-    double power_by_velocity_factor =  1023.0/10.0; //TODO The factor is related to update frecuency.
+
+    const double max_velocity = 0.1;
+    const double max_pwm = 1023.0;
+    const double power_by_velocity_factor =  max_pwm/max_velocity;
+    const double DistancePerCount = (TWO_PI * 0.035) / 20; 
     
   public:
     /**
@@ -34,9 +36,10 @@ class Motor {
     /**
     * 
     */
-    int move(int velocity, int direction);
+    int move(double velocity, int direction);
+    int move(double velocity);
 
-    int move_velocity(int velocity);
+    int move_velocity(double velocity);
     /**
      * 
      */
