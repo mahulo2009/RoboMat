@@ -3,27 +3,90 @@
 
 #include "Motor.h"
 
+#define DEBUG 1
+
 class Robot {
   public:
+    /**
+     * 
+     */
     Robot();
-    void setup();
-    int move(int number, int power, int direction);
-    int stop(int number);
-    int updatePosition(int number);
-    int updateVelocity();
-    int getPosition(int number);
-    float getVelocity(int number);
-    float getVelocityDemanded(int number);
-    int move(double velocity, int direction);
-    int move(double velocity_1, double velocity_2);
-    int stop();   
-     
-    void configurePid(double Kp, double Ki, double Kd);
+    /**
+     * 
+     */
+    void move(double velocity_x, double velocity_theta);
+    /**
+     * 
+     */
+    void updateEncoder(int number);
+    /**
+     *
+     */
+    void updateControlLoopLowLevel();
+    /**
+     * 
+     */
+    void updateControlLoopHighLevel(double dt);
+    /**
+     *
+     */
+    double getX() { return x_; };
+    /**
+     *
+     */
+    double getY() { return y_; };
+    /**
+     *
+     */
+    double getTheta() { return theta_; };
+    /**
+     *
+     */
+    double getVx() { return vx_; };
+    /**
+     *
+     */
+    double getVy() { return vy_; };
+    /**
+     *
+     */
+    double getVtheta() { return vtheta_; };
+
   private:
-    Motor *engine_[2];
+    /**
+     * 
+     */
+    Motor *motor_[2];
+    /**
+     * 
+     */
+    double x_;
+    /**
+     * 
+     */
+    double y_;
+    /**
+     * 
+     */
+    double theta_;
+    /**
+     *
+     */
+    double vx_;
+    /**
+     *
+     */
+    double vy_;
+    /**
+     *
+     */
+    double vtheta_;
+    /**
+     *
+     */
+    const double wheel_separation_= 0.135;
 };
 
 #endif
-
 
 

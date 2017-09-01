@@ -1,75 +1,61 @@
 #ifndef Motor_H
 #define Motor_H
 
-
 #include <ESP8266WiFi.h>
-#include "pid.h"
+#include "Encoder.h"
 
+#define DEBUG 1
+
+/**
+ *
+ */
 class Motor {
-  private:
-    int pin_power;
-    int pin_direction;
-    int pin_positoin;
-    int position;    
-    float velocity;
-    long previous_position;    
-    PID pid;
 
-    float velocityTarget;
-    float velocityDemanded;
-    float velocityCurrent;
-
-    const double max_velocity = 0.1;
-    const double max_pwm = 1023.0;
-    const double power_by_velocity_factor =  max_pwm/max_velocity;
-    const double DistancePerCount = (TWO_PI * 0.035) / 20; 
-    
   public:
+     /**
+     *
+     */
+    Motor(int pin_power,int pin_direction,int pin_position);
+    /**
+     *
+     */
+    void move(double velocity);
+     /**
+     * 
+     */
+    void updateEncoder();
+     /**
+     *
+     */
+    void updateControlLoopLowLevel();
+    /**
+     *
+     */
+    void updateControlLoopHighLevel();
+     /**
+     *
+     */
+    double getPosition();
+    /**
+     *
+     */
+    double getDistance();
+   
+  private:
+  
+    Encoder encoder_;
     /**
      * 
      */
-    Motor(int pin_power,int pin_direction,int pin_positoin);
+    double position_;    
     /**
      * 
      */
-    void setup();
-    /**
-    * 
-    */
-    int move(double velocity, int direction);
-    int move(double velocity);
-
-    int move_velocity(double velocity);
+    double previous_position_;
     /**
      * 
      */
-    void stop();
-    /**
-     * 
-     */
-    void updatePosition();
-    /**
-     * 
-     */
-    void updateVelocity();
-
-    /**
-     * 
-     */
-    int getPosition();
-
-    /**
-     * 
-     */
-    float getVelocityTarget();
-    float getVelocityDemanded();
-    float getVelocityCurrent();
-
-    void configurePid(double Kp, double Ki, double Kd);
-
-    private:
-    
+    const double distance_per_count_ = (TWO_PI * 0.035) / 20;  
 };
-
 #endif
 
