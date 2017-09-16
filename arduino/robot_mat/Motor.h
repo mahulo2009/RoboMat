@@ -20,6 +20,10 @@ class Motor {
      *
      */
     void move(double velocity);
+    /**
+     *
+     */
+    void stop();
      /**
      * 
      */
@@ -32,30 +36,26 @@ class Motor {
      *
      */
     void updateControlLoopHighLevel();
-     /**
-     *
-     */
-    double getPosition();
     /**
      *
      */
-    double getDistance();
-   
+    double getVelocity(double dt);
+     
   private:
   
     Encoder encoder_;
     /**
      * 
      */
-    double position_;    
+    double angle_;    
     /**
      * 
      */
-    double previous_position_;
+    double previous_angle_;
     /**
      * 
      */
-    const double distance_per_count_ = (TWO_PI * 0.035) / 20;  
+    const double angle_per_tic_ = (TWO_PI) / 21.0;  
 };
 #endif
 

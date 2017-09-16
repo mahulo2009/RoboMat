@@ -18,6 +18,10 @@ class Robot {
     /**
      * 
      */
+    void stop();
+    /**
+     * 
+     */
     void updateEncoder(int number);
     /**
      *
@@ -85,6 +89,10 @@ class Robot {
      *
      */
     const double wheel_separation_= 0.135;
+    /**
+     * 
+     */
+    const double wheel_radious_= 0.0325;
 };
 
 #endif

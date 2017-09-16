@@ -20,11 +20,14 @@ extern "C"
 
 
 //Network Configuration
-const char* ssid = "GTC-Guest";
-const char* password = ".gtcguest.";
-IPAddress server(161,72,123,196);
+const char* ssid = "***";
+const char* password = "***";
+IPAddress server(192, 168, 1, 40); // ip of your ROS server
+
 const uint16_t serverPort = 11411;
 
+#define STOP_TIME_OUT 4 
+int stop_time_out_count = 0;
 
 //Timer configuration
 os_timer_t a_timer;
@@ -71,7 +74,8 @@ void timer_callback(void *pArg) {
  *
  */
 void cmd_velCallback( const geometry_msgs::Twist& CVel) {
-  nh.logdebug("cmd_velCallback");   
+  nh.logdebug("cmd_velCallback");
+  stop_time_out_count=0;   
   robot.move(CVel.linear.x,CVel.angular.z);  
 }
 ros::Subscriber<geometry_msgs::Twist> cmd_vel_sub("/car/cmd_vel", &cmd_velCallback );
@@ -111,11 +115,12 @@ void loop() {
 
     current_time = nh.now();
 
-//---------------------- BEGIN Testing Broad Caster
+	//BEGIN Testing Broad Caster
     double dt = current_time.toSec() - last_time.toSec();
     
     robot.updateControlLoopHighLevel(dt);
 
+    //TODO REVIEW THIS THE ANGLE IS NOT CORRECT
     geometry_msgs::Quaternion odom_quat = tf::createQuaternionFromYaw(robot.getTheta());
     
     // tf odom->base_link
@@ -129,9 +134,9 @@ void loop() {
     odom_trans.transform.rotation = odom_quat;
   
     odom_broadcaster.sendTransform(odom_trans);
-//---------------------- END Testing Broad Caster
+	//END Testing Broad Caster
 
-//-----------------------BEGIN odometry
+	//BEGIN odometry
     odom_nav_msg.header.stamp = current_time;
     odom_nav_msg.header.frame_id = "/odom";
 
@@ -148,12 +153,20 @@ void loop() {
     odom_nav_msg.twist.twist.angular.z = robot.getVtheta();
 
     odom_pub.publish(&odom_nav_msg);
-//-----------------------END odometry  
+	//END odometry  
+	
     last_time = current_time;
 
     nh.spinOnce(); 
     //Delay
     delay(250);  
+
+    if (stop_time_out_count++ == STOP_TIME_OUT ) 
+    {
+      stop_time_out_count=0;
+      robot.stop();           
+    }
+    
   //} 
  }
 

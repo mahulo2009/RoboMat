@@ -9,37 +9,30 @@ Robot::Robot() {
   vx_=0;
   vy_=0;
   vtheta_=0;
+  theta_=0;
 }
 
 void Robot::move(double velocity_x, double velocity_theta)
 {
-  double velocity_1  = 0;
-  double velocity_2  = 0;
-   
-  if(velocity_x == 0)
-  {
-    velocity_1 = velocity_theta * wheel_separation_ / 2.0;
-    velocity_2 = (-1) * velocity_1;
-  }
-  else if(velocity_theta == 0)
-  {
-    velocity_1 = velocity_x;
-    velocity_2 = velocity_x;
-  }
-  else
-  {
-    velocity_1  = velocity_x - velocity_theta * wheel_separation_ / 2.0;
-    velocity_2  = velocity_x + velocity_theta * wheel_separation_ / 2.0;
-  }
+  double velocity_1  = ( velocity_x + velocity_theta * wheel_separation_) / ( wheel_radious_ ) ;
+  double velocity_2  = ( velocity_x - velocity_theta * wheel_separation_) / ( wheel_radious_ ) ;
 
-/*  
+  Serial.print("move velocity:");
+  Serial.print("\t");
   Serial.print(velocity_1);
   Serial.print("\t");
   Serial.print(velocity_2);
   Serial.print("\n");
-*/
+
   motor_[0]->move(velocity_1);
   motor_[1]->move(velocity_2);
+}
+
+void Robot::stop()
+{  
+  for (int i=0;i<2;i++) {
+   motor_[i]->stop();
+  }
 }
 
 void Robot::updateEncoder(int number) {
@@ -61,27 +54,30 @@ void Robot::updateControlLoopHighLevel(double dt)
     motor_[i]->updateControlLoopHighLevel();
   }
 
-	double engine_distance_1  = motor_[0]->getDistance();
-  double engine_distance_2  = motor_[1]->getDistance();
+	double velocity_1  = motor_[0]->getVelocity(dt);
+  double velocity_2  = motor_[1]->getVelocity(dt);
 
-	vx_ = (engine_distance_1 + engine_distance_2) / 2.;
+	vx_ = ( wheel_radious_ * ( velocity_1 + velocity_2 ) ) / 2.;
 	vy_ = 0;
-
-	theta_ = ((motor_[0]->getPosition() - motor_[1]->getPosition())/((TWO_PI * 0.035) / 20)) / 45. * PI;
-
-	double delta_x = (vx_ * cos(theta_)) * dt;
-	double delta_y = (vx_ * sin(theta_)) * dt;
-
-	x_ += delta_x;
-	y_ += delta_y;
-
-	vtheta_ = theta_ / dt;
-
-
+  vtheta_ = ( ( wheel_radious_ * ( velocity_1 - velocity_2 ) ) /  ( wheel_separation_ ) ) ;
+ 
+	x_ +=  vx_ * cos(theta_) * dt;
+	y_ +=  vx_ * sin(theta_) * dt;
+  theta_+= vtheta_ * dt;
+  
+	Serial.print("updateControlLoopHighLevel velocity:");
+  Serial.print("\t");
+  Serial.print(velocity_1);
+  Serial.print("\t");
+  Serial.print(velocity_2);
+  Serial.print("\t");
+  Serial.print(vx_);
+  Serial.print("\t");
+  Serial.print(x_);
+  Serial.print("\t");
+  Serial.print(y_);
+  Serial.print("\t");
   Serial.print(theta_);
-  Serial.print("\t");
-  Serial.print(motor_[0]->getPosition());
-  Serial.print("\t");
-  Serial.print(motor_[1]->getPosition());
-  Serial.print("\n");
+  Serial.print("\n"); 
+  
 }

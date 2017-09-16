@@ -99,7 +99,7 @@ class Encoder {
     /**
      * 
      */
-    const long max_velocity_ = 21; //Max value per update period TODO CHECK THIS VALUE
+    const double max_tic_per_second_ = 40.0; //Max value per update period TODO CHECK THIS VALUE
     /**
      * 
      */
@@ -107,7 +107,7 @@ class Encoder {
     /**
      * 
      */
-    const double power_by_velocity_factor_ =  max_pwm_/max_velocity_;
+    const double power_by_velocity_factor_ =  max_pwm_/max_tic_per_second_;
     /**
      * 
      */
@@ -116,7 +116,10 @@ class Encoder {
      * 
      */
     void move_velocity_(long velocity);
-    
+    /**
+     * 
+     */
+    bool is_stopped;
 };
 
 #endif

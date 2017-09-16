@@ -3,9 +3,8 @@
 Motor::Motor(int pin_power,int pin_direction,int pin_position) : 
   encoder_(pin_power,pin_direction,pin_position) 
 {
-	position_=0;
-	previous_position_=0;
-
+	angle_=0;
+	previous_angle_=0;
 }
 
 void Motor::updateEncoder()
@@ -15,7 +14,12 @@ void Motor::updateEncoder()
 
 void Motor::move(double velocity)
 {
-	encoder_.move(velocity/distance_per_count_);
+  encoder_.move(velocity/angle_per_tic_);
+}
+
+void Motor::stop()
+{
+  encoder_.stop();
 }
 
 void Motor::updateControlLoopLowLevel()
@@ -25,18 +29,13 @@ void Motor::updateControlLoopLowLevel()
 
 void Motor::updateControlLoopHighLevel()
 {
-  position_=encoder_.getEncoder()*distance_per_count_;
+  angle_=encoder_.getEncoder()*angle_per_tic_;
 }
 
-double Motor::getPosition()
+double Motor::getVelocity(double dt)
 {
-	return position_;
-}
+  double velocity  = (angle_ - previous_angle_)/dt;
+  previous_angle_ = angle_;
 
-double Motor::getDistance()
-{
-  double distance  = (position_ - previous_position_);
-  previous_position_ = position_;
-
-  return distance;
+  return velocity;
 }
