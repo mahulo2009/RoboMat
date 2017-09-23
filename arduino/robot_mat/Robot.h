@@ -2,6 +2,7 @@
 #define Robot_H
 
 #include "Motor.h"
+#include "Ultrasonic.h"
 
 #define DEBUG 1
 
@@ -32,6 +33,10 @@ class Robot {
      */
     void updateControlLoopHighLevel(double dt);
     /**
+     * 
+     */
+    void updateDistance();
+    /**
      *
      */
     double getX() { return x_; };
@@ -55,12 +60,20 @@ class Robot {
      *
      */
     double getVtheta() { return vtheta_; };
+     /**
+     *
+     */
+    double getDistance();
 
   private:
     /**
      * 
      */
     Motor *motor_[2];
+    /**
+     * 
+     */
+    Ultrasonic  *ultrasonic;
     /**
      * 
      */

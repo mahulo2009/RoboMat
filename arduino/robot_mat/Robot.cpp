@@ -3,6 +3,7 @@
 Robot::Robot() {
 	motor_[0] = new Motor(5,0,14);
 	motor_[1] = new Motor(4,2,12);
+  ultrasonic = new Ultrasonic(16,15);
   x_=0;
   y_=0;
   theta_=0;
@@ -82,3 +83,15 @@ void Robot::updateControlLoopHighLevel(double dt)
   Serial.print("\n"); 
   */
 }
+
+void Robot::updateDistance()
+{
+  ultrasonic->updateDistance();
+}
+
+double Robot::getDistance()
+{
+   return ultrasonic->distance()/100; 
+}
+
+

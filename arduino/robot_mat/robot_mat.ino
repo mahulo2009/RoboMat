@@ -24,6 +24,7 @@ extern "C"
 //Network Configuration
 const char* ssid = "***";
 const char* password = "***";
+
 IPAddress server(192, 168, 1, 40); // ip of your ROS server
 
 const uint16_t serverPort = 11411;
@@ -37,20 +38,19 @@ int timer_period = 250;
 
 //Robot
 Robot robot;
-//Ultrasonice
-Ultrasonic  ultrasonic(13,15);
 //Ros node handler
 ros::NodeHandle nh;
 
 nav_msgs::Odometry odom_nav_msg;              
 ros::Publisher odom_pub("/car/odom", &odom_nav_msg); 
+
+sensor_msgs::Range ultrasonic_msg;   
+ros::Publisher pub_ultrasonic("/car/ultrasound", &ultrasonic_msg);      
+
 tf::TransformBroadcaster broadcaster;
 geometry_msgs::TransformStamped odom_trans;
 geometry_msgs::TransformStamped ultrasonic_trans;   
-
 geometry_msgs::Twist odom_geometry_msg;
-sensor_msgs::Range ultrasonic_msg;   
-ros::Publisher pub_ultrasonic("/car/ultrasound", &ultrasonic_msg);      
 
 ros::Time current_time = nh.now();
 ros::Time last_time = current_time;
@@ -115,6 +115,7 @@ void setup() {
   nh.subscribe(cmd_vel_sub);
   //nh.subscribe(configure_pid);  
   nh.advertise(odom_pub);
+  nh.advertise(pub_ultrasonic);
 
   //Configure ultrasonic
   ultrasonic_msg.radiation_type = sensor_msgs::Range::ULTRASOUND;
@@ -127,7 +128,7 @@ void setup() {
 void loop() {
   //if (nh.connected()) {
 
-    ultrasonic.updateDistance();
+    robot.updateDistance();
 
     current_time = nh.now();
 
@@ -138,6 +139,7 @@ void loop() {
 
     //TODO REVIEW THIS THE ANGLE IS NOT CORRECT
     geometry_msgs::Quaternion odom_quat = tf::createQuaternionFromYaw(robot.getTheta());
+
     
     // tf odom->base_link
     odom_trans.header.stamp = current_time;
@@ -150,9 +152,11 @@ void loop() {
     odom_trans.transform.rotation = odom_quat;
   
     broadcaster.sendTransform(odom_trans);
+    
 	  //END Testing Broad Caster
 
 	  //BEGIN odometry
+    
     odom_nav_msg.header.stamp = current_time;
     odom_nav_msg.header.frame_id = "/odom";
 
@@ -169,11 +173,11 @@ void loop() {
     odom_nav_msg.twist.twist.angular.z = robot.getVtheta();
 
     odom_pub.publish(&odom_nav_msg);
-	  //END odometry  
+    //END odometry  
 
 
     //BEGIN Ultrasonic
-    ultrasonic_trans.header.frame_id = "/base_link";
+      ultrasonic_trans.header.frame_id = "/base_link";
     ultrasonic_trans.child_frame_id = "/ultrasound";
     ultrasonic_trans.transform.translation.x = 0.0; 
     ultrasonic_trans.transform.translation.y = 0.0; 
@@ -182,10 +186,9 @@ void loop() {
     ultrasonic_trans.header.stamp = current_time;
     broadcaster.sendTransform(ultrasonic_trans);
 
-    ultrasonic_msg.range = ultrasonic.distance()/100;
+    ultrasonic_msg.range = robot.getDistance();
     ultrasonic_msg.header.stamp = current_time;
-    pub_ultrasonic.publish(&ultrasonic_msg);
-    
+    pub_ultrasonic.publish(&ultrasonic_msg);    
 	  //END Ultrasonic
     
     last_time = current_time;
