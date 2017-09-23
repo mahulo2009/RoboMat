@@ -16,14 +16,14 @@ void Robot::move(double velocity_x, double velocity_theta)
 {
   double velocity_1  = ( velocity_x + velocity_theta * wheel_separation_) / ( wheel_radious_ ) ;
   double velocity_2  = ( velocity_x - velocity_theta * wheel_separation_) / ( wheel_radious_ ) ;
-
+/*
   Serial.print("move velocity:");
   Serial.print("\t");
   Serial.print(velocity_1);
   Serial.print("\t");
   Serial.print(velocity_2);
   Serial.print("\n");
-
+*/
   motor_[0]->move(velocity_1);
   motor_[1]->move(velocity_2);
 }
@@ -65,6 +65,7 @@ void Robot::updateControlLoopHighLevel(double dt)
 	y_ +=  vx_ * sin(theta_) * dt;
   theta_+= vtheta_ * dt;
   
+  /*
 	Serial.print("updateControlLoopHighLevel velocity:");
   Serial.print("\t");
   Serial.print(velocity_1);
@@ -79,5 +80,5 @@ void Robot::updateControlLoopHighLevel(double dt)
   Serial.print("\t");
   Serial.print(theta_);
   Serial.print("\n"); 
-  
+  */
 }
