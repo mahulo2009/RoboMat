@@ -5,10 +5,12 @@
 #include <tf/transform_broadcaster.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Twist.h>
+#include <sensor_msgs/Range.h>
 
 #include <std_msgs/String.h>
 #include <std_msgs/Float64.h>
 #include "Robot.h"
+#include "Ultrasonic.h"
 
 //Necessary for the timer function
 extern "C"
@@ -35,15 +37,20 @@ int timer_period = 250;
 
 //Robot
 Robot robot;
+//Ultrasonice
+Ultrasonic  ultrasonic(13,15);
 //Ros node handler
 ros::NodeHandle nh;
 
 nav_msgs::Odometry odom_nav_msg;              
 ros::Publisher odom_pub("/car/odom", &odom_nav_msg); 
-tf::TransformBroadcaster odom_broadcaster;
+tf::TransformBroadcaster broadcaster;
 geometry_msgs::TransformStamped odom_trans;
+geometry_msgs::TransformStamped ultrasonic_trans;   
 
-geometry_msgs::Twist odom_geometry_msg;       
+geometry_msgs::Twist odom_geometry_msg;
+sensor_msgs::Range ultrasonic_msg;   
+ros::Publisher pub_ultrasonic("/car/ultrasound", &ultrasonic_msg);      
 
 ros::Time current_time = nh.now();
 ros::Time last_time = current_time;
@@ -104,18 +111,27 @@ void setup() {
   nh.initNode();
 
   //Init TF broad caster.
-  odom_broadcaster.init(nh);
+  broadcaster.init(nh);
   nh.subscribe(cmd_vel_sub);
   //nh.subscribe(configure_pid);  
   nh.advertise(odom_pub);
+
+  //Configure ultrasonic
+  ultrasonic_msg.radiation_type = sensor_msgs::Range::ULTRASOUND;
+  ultrasonic_msg.header.frame_id = "/ultrasound";   
+  ultrasonic_msg.field_of_view = 0.1;
+  ultrasonic_msg.min_range = 0.0;
+  ultrasonic_msg.max_range = 20;
 }
 
 void loop() {
   //if (nh.connected()) {
 
+    ultrasonic.updateDistance();
+
     current_time = nh.now();
 
-	//BEGIN Testing Broad Caster
+	  //BEGIN Testing Broad Caster
     double dt = current_time.toSec() - last_time.toSec();
     
     robot.updateControlLoopHighLevel(dt);
@@ -133,10 +149,10 @@ void loop() {
     odom_trans.transform.translation.z = 0.0;
     odom_trans.transform.rotation = odom_quat;
   
-    odom_broadcaster.sendTransform(odom_trans);
-	//END Testing Broad Caster
+    broadcaster.sendTransform(odom_trans);
+	  //END Testing Broad Caster
 
-	//BEGIN odometry
+	  //BEGIN odometry
     odom_nav_msg.header.stamp = current_time;
     odom_nav_msg.header.frame_id = "/odom";
 
@@ -153,8 +169,25 @@ void loop() {
     odom_nav_msg.twist.twist.angular.z = robot.getVtheta();
 
     odom_pub.publish(&odom_nav_msg);
-	//END odometry  
-	
+	  //END odometry  
+
+
+    //BEGIN Ultrasonic
+    ultrasonic_trans.header.frame_id = "/base_link";
+    ultrasonic_trans.child_frame_id = "/ultrasound";
+    ultrasonic_trans.transform.translation.x = 0.0; 
+    ultrasonic_trans.transform.translation.y = 0.0; 
+    ultrasonic_trans.transform.translation.z = 0.0;
+    ultrasonic_trans.transform.rotation = tf::createQuaternionFromYaw(0.0); //TODO INCLUDE ORIENTATION + RELATIVE POSITION SENSOR.
+    ultrasonic_trans.header.stamp = current_time;
+    broadcaster.sendTransform(ultrasonic_trans);
+
+    ultrasonic_msg.range = ultrasonic.distance()/100;
+    ultrasonic_msg.header.stamp = current_time;
+    pub_ultrasonic.publish(&ultrasonic_msg);
+    
+	  //END Ultrasonic
+    
     last_time = current_time;
 
     nh.spinOnce(); 
